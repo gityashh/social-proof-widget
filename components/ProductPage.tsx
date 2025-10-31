@@ -1,12 +1,59 @@
-import React from 'react';
-import { Product } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Product, PurchaseEvent } from '../types';
 import { UrgencyBar } from './UrgencyBar';
 import { ViewerCount } from './ViewerCount';
-import { useProductMetrics } from '../hooks/useSocialProof';
+import { useProductMetrics, useProductPurchases } from '../hooks/useSocialProof';
+
+// --- START: In-file Components ---
+const ProductPurchaseToast: React.FC<{ event: PurchaseEvent }> = ({ event }) => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    setVisible(false); // Reset for new events
+    const timerIn = setTimeout(() => setVisible(true), 100);
+    const timerOut = setTimeout(() => setVisible(false), 5000);
+
+    return () => {
+      clearTimeout(timerIn);
+      clearTimeout(timerOut);
+    };
+  }, [event]);
+
+  return (
+    <div
+      className={`fixed bottom-5 right-5 w-80 p-4 rounded-xl shadow-2xl shadow-black/50 bg-gray-800 border border-gray-700
+                  transform transition-all duration-500 ease-in-out z-50
+                  ${visible ? 'translate-x-0 opacity-100' : 'translate-x-[calc(100%+2.5rem)] opacity-0'}`}
+      aria-live="polite"
+      role="status"
+    >
+      <div className="flex items-center">
+        <div className="flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-orange-400">
+             <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5A7.5 7.5 0 0 1 12 20.5c-2.5 0-4.5-1-6-2.5-1.5-1.5-2.5-3.5-2.5-6A2.5 2.5 0 0 1 6 9.5c1.5 0 2.5 1 2.5 2.5z"></path>
+          </svg>
+        </div>
+        <div className="ml-3 flex-1">
+          <p className="text-sm font-bold text-white">
+            {event.name}
+          </p>
+          <p className="mt-1 text-sm text-gray-300">
+            Just purchased this product
+          </p>
+          <p className="mt-1 text-xs text-gray-500">
+            A few seconds ago
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+// --- END: In-file Components ---
 
 interface ProductPageProps {
   product: Product;
   onBack: () => void;
+  onAddToCart: (product: Product) => void;
 }
 
 const AddToCartIcon = () => (
@@ -24,8 +71,9 @@ const BackIcon = () => (
     </svg>
 );
 
-export const ProductPage: React.FC<ProductPageProps> = ({ product, onBack }) => {
+export const ProductPage: React.FC<ProductPageProps> = ({ product, onBack, onAddToCart }) => {
   const { viewers, stock, saleEndTime } = useProductMetrics(product);
+  const { latestProductPurchase } = useProductPurchases(product);
 
   return (
     <div className="relative w-full animate-fade-in">
@@ -64,13 +112,16 @@ export const ProductPage: React.FC<ProductPageProps> = ({ product, onBack }) => 
 
           <div className="flex items-center justify-between mt-8">
             <span className="text-4xl font-bold text-white">${product.price.toFixed(2)}</span>
-            <button className="flex items-center justify-center bg-cyan-500 hover:bg-cyan-400 text-gray-900 font-bold py-3 px-8 rounded-full shadow-lg shadow-cyan-500/30 transform hover:scale-105 transition-all duration-300 ease-in-out">
+            <button onClick={() => onAddToCart(product)} className="flex items-center justify-center bg-cyan-500 hover:bg-cyan-400 text-gray-900 font-bold py-3 px-8 rounded-full shadow-lg shadow-cyan-500/30 transform hover:scale-105 transition-all duration-300 ease-in-out">
               <AddToCartIcon />
               Add to Cart
             </button>
           </div>
         </div>
       </div>
+       {latestProductPurchase && (
+        <ProductPurchaseToast key={latestProductPurchase.timestamp.getTime()} event={latestProductPurchase} />
+      )}
     </div>
   );
 };

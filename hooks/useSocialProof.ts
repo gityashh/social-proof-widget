@@ -35,7 +35,7 @@ export const useSiteActivity = () => {
 
 
 // Simple hash function to get a consistent random seed from a string
-const stringToSeed = (str: string) => {
+export const stringToSeed = (str: string) => {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
         const char = str.charCodeAt(i);
@@ -44,6 +44,46 @@ const stringToSeed = (str: string) => {
     }
     return Math.abs(hash);
 }
+
+/**
+ * Hook for generating real-time purchase notifications for a specific product.
+ */
+export const useProductPurchases = (product: Product | null) => {
+    const [latestProductPurchase, setLatestProductPurchase] = useState<PurchaseEvent | null>(null);
+
+    useEffect(() => {
+        if (!product) {
+            setLatestProductPurchase(null);
+            return;
+        };
+
+        let interval: number;
+        
+        const generatePurchase = () => {
+            const name = FAKE_NAMES[Math.floor(Math.random() * FAKE_NAMES.length)];
+            setLatestProductPurchase({
+                name,
+                location: '', // Not needed for this toast
+                productName: product.name,
+                timestamp: new Date(),
+            });
+        };
+        
+        // Generate one immediately after a small delay to feel real
+        const initialTimeout = setTimeout(generatePurchase, Math.random() * 4000 + 3000);
+        
+        // Use window.setInterval to get correct type for clearInterval
+        interval = window.setInterval(generatePurchase, Math.random() * 8000 + 10000); // 10-18 seconds
+
+        return () => {
+            clearTimeout(initialTimeout);
+            clearInterval(interval);
+        };
+    }, [product]);
+
+    return { latestProductPurchase };
+}
+
 
 /**
  * Hook for generating real-time metrics for a specific product.

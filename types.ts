@@ -9,8 +9,13 @@ export interface Product {
 }
 
 export interface PurchaseEvent {
-  name: string;
+  name:string;
   location: string;
   productName: string;
   timestamp: Date;
+}
+
+export interface CartItem {
+  product: Product;
+  quantity: number;
 }
